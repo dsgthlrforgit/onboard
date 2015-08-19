@@ -244,11 +244,19 @@ MATRICE 100 被设计为可以使用遥控器、机载设备和移动设备进�
 
 ###2.1 协议格式
 
-   ```
-   |<--------------Protocol Frame Header--------------->|<--Protocol Frame Data-->|<--Protocol Frame Checksum-->|
-   |SOF|LEN|VER|SESSION|A|RES0|PADDING|ENC|RES1|SEQ|CRC16|                         DATA               |                            CRC32                         |
-   ```
- 
+**协议帧**
+<table>
+<tr>
+	<td>Protocol Frame Header</td>
+	<td>Protocol Frame Data</td>
+	<td>Protocol Frame Checksum</td>
+</tr>
+<tr>
+	<td> |SOF|LEN|VER|SESSION|A|RES0|PADDING|ENC|RES1|SEQ|CRC16|</td>
+	<td>    DATA   </td>
+	<td>  CRC32</td>
+</tr>
+</table>
 <br> 
 
 ###2.2 协议帧头格式说明
@@ -815,10 +823,20 @@ DJI Onboard API 相关的命令分为三大类：
 
 + IMU外发的加速度和角速度都是经过滤波算法处理的结果，我们会在未来的版本中加入标志位允许IMU外发传感器的原始数据。
 ###2.6 通信会话加密机制
-   ```
-   |<--------------Protocol Frame Header--------------->|<--Protocol Frame Data-->|<--Protocol Frame Checksum-->|
-   |SOF|LEN|VER|SESSION|A|RES0|PADDING|ENC|RES1|SEQ|CRC16|                  DATA                      |                         CRC32                      |
-   ```
+**协议帧**
+<table>
+<tr>
+	<td>Protocol Frame Header</td>
+	<td>Protocol Frame Data</td>
+	<td>Protocol Frame Checksum</td>
+</tr>
+<tr>
+	<td> |SOF|LEN|VER|SESSION|A|RES0|PADDING|ENC|RES1|SEQ|CRC16|</td>
+	<td>    DATA   </td>
+	<td>  CRC32</td>
+</tr>
+</table>
+
    通信会话加密机制防止第三方直接窜入修改，夺取控制权，上述协议帧帧头和CRC校验部分不加密，数据段加密。
    具体哪些指令需要加密发送如下所示：
    
@@ -1251,7 +1269,7 @@ HORI_POS模式的输入量是相对位置。这个设计是为了兼顾GPS飞行
 
   **备注：Ground 坐标系的高度方向与人对飞行控制的直觉不符，因此我们将竖直方向的高度和速度都调整成了以天空方向为正，也即发送数值为正的速度会让飞行平台远离地面。但是调整高度方向并不改变Ground 坐标系的另外两个轴的方向和顺序。**
 
-##四 API编程说明
+##四. API编程说明
 假设通信中发送协议数据的函数定义如下：
 ```c
 void App_Send_Data(unsigned char flag,		//通信会话方式
