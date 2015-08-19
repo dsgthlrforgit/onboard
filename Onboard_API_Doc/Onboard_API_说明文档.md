@@ -32,6 +32,7 @@ DJI 为开发者提供两种功能完善的飞行控制 API 帮助开发飞行�
         + 命令集说明
         + 命令及权限
         + 数据包命令集和命令码集合图表
+     + 通信会话加密机制
      + 标准数据包含义说明
 + 控制模式说明
    + 模式标志位说明
@@ -245,7 +246,7 @@ MATRICE 100 被设计为可以使用遥控器、机载设备和移动设备进�
 
    ```
    |<--------------Protocol Frame Header--------------->|<--Protocol Frame Data-->|<--Protocol Frame Checksum-->|
-   |SOF|LEN|VER|SESSION|A|RES0|PADDING|ENC|RES1|SEQ|CRC16|                   DATA                     |            CRC32            |
+   |SOF|LEN|VER|SESSION|A|RES0|PADDING|ENC|RES1|SEQ|CRC16|DATA |CRC32|
    ```
  
 <br> 
@@ -813,7 +814,20 @@ DJI Onboard API 相关的命令分为三大类：
 + _GPS_ 信息中的 _lati_, _longti_ 均为弧度制。
 
 + IMU外发的加速度和角速度都是经过滤波算法处理的结果，我们会在未来的版本中加入标志位允许IMU外发传感器的原始数据。
-###2.6 标准数据包含义说明
+###2.6 通信会话加密机制
+   ```
+   |<--------------Protocol Frame Header--------------->|<--Protocol Frame Data-->|<--Protocol Frame Checksum-->|
+   |SOF|LEN|VER|SESSION|A|RES0|PADDING|ENC|RES1|SEQ|CRC16|DATA |CRC32|
+   ```
+   通信会话加密机制防止第三方直接窜入修改，夺取控制权，上述协议帧帧头和CRC校验部分不加密，数据段加密。
+   具体哪些指令需要加密发送如下所示：
+   **LEVEL 0 即 API激活相关指令无需加密**
+   **控制指令议建议不加密**
+   **状态控制命令（起飞，降落，返航）等指令需加密**
+   **获取控制权可加可不加密**
+   **获取飞机数据指令可加可不加密**
+   **备注：这里的加密指的就是发送协议数据的函数（见第四部分）中的is_enc参数**
+###2.7 标准数据包含义说明
 **标准数据包中各个状态包的数据段含义如下表所示：**
 <table>
 <tr>
@@ -1283,7 +1297,13 @@ void test_activation_ack_cmd_callback(ProHeader *header)
 		#define LEVEL_ERROR				0x0007
 	*/
 	uint16_t ack_data;
-	printf("Sdk_ack_cmd0_callback,sequence_number=%d,session_id=%d,data_len=%d\n", header->sequence_number, header->session_id, header->length - EXC_DATA_SIZE);
+	printf("Sdk_ack_cmd0_callback,
+			sequence_number=%d,
+			session_id=%d,
+			data_len=%d\n", 
+			header->sequence_number, 
+			header->session_id, 
+			header->length - EXC_DATA_SIZE);
 	memcpy((uint8_t *)&ack_data,(uint8_t *)&header->magic, (header->length - EXC_DATA_SIZE));
 
 	if( is_sys_error(ack_data))
@@ -1294,7 +1314,14 @@ void test_activation_ack_cmd_callback(ProHeader *header)
 	}
 	else
 	{
-        char result[][50]={{"ACTIVATION_SUCCESS"},{"PARAM_ERROR"},{"DATA_ENC_ERROR"},{"NEW_DEVICE_TRY_AGAIN"},{"DJI_APP_TIMEOUT"},{" DJI_APP_NO_INTERNET"},{"SERVER_REFUSED"},{"LEVEL_ERROR"}};
+        char result[][50]={{"ACTIVATION_SUCCESS"},
+					       {"PARAM_ERROR"},
+					       {"DATA_ENC_ERROR"},
+					       {"NEW_DEVICE_TRY_AGAIN"},
+					       {"DJI_APP_TIMEOUT"},
+					       {" DJI_APP_NO_INTERNET"},
+					       {"SERVER_REFUSED"},
+					       {"LEVEL_ERROR"}};
         printf("[ACTIVATION] Activation result: %s \n", *(result+ack_data));
         activation_callback_flag=1;
       //  QMessageBox::information(NULL, "Warning", *(result+ack_data), QMessageBox::Ok);
@@ -1384,7 +1411,6 @@ App_Send_Data(2,
 				{
 					printf("[DEBUG] WARNING CMD UN-SECCUSS\n");
 				}
-				
 			}
 		}
 		else
