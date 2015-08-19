@@ -882,6 +882,7 @@ DJI Onboard API 相关的命令分为三大类：
 |13|VERT_THRUST<br>HORI_ATTI_TILT_ANG<br>YAW_ANG|10 ~ 100 （危险，请小心使用）<br>-30 度 ~ 30 度<br>-180 度 ~ 180 度|0b001000XX|
 |14|VERT_THRUST<br>HORI_ATTI_TILT_ANG<br>YAW_RATE|10 ~ 100（危险，请小心使用）<br>-30 度 ~ 30 度<br>-100 度/s ~ 100 度/s|0b001010XX|
 
+
 HORI_POS模式的输入量是相对位置。这个设计是为了兼顾GPS飞行和未来可能的根据视觉定位系统飞行的需求。想通过GPS飞行时，开发者可以使用飞控外发的位置信息做控制，如果想设计通过视觉定位系统飞行的应用，开发者可以使用自己的定位系统的位置进行控制(速度来自Gudiance或者GPS)。开发者自己使用时可以根据需求封装，例如[xuhao1封装的SDK包](https://github.com/xuhao1/dji_sdk/blob/master/src/modules/dji_services.cpp)采用了GPS的封装。
 
 我们建议用户在室内环境中，如果没有安装Gudiance或者飞行高度超过3m时，不要使用竖直方向的位置控制，因为室内环境中气压计读数不准，影响控制器的表现。
