@@ -170,9 +170,8 @@ MATRICE 100 被设计为可以使用遥控器、机载设备和移动设备进�
 
 + 启动示例代码
   1. 编译 ROS package dji_sdk
-  2. 启动 roscore, 然后启动 rosbridge_server 
-  
-          roslaunch rosbridge_server rosbridge_websocket.launch
+  2. 启动 roscore, 然后启动 rosbridge_server
+         roslaunch rosbridge_server rosbridge_websocket.launch
   3. 通过代码中的 launch 文件启动 dji_sdk_node。
   
     下面的代码是示例 launch 文件
@@ -217,7 +216,9 @@ MATRICE 100 被设计为可以使用遥控器、机载设备和移动设备进�
       });
     } 
     ```
-  5. 在浏览器中打开 “sdk_keyboard_demo.html” 。rosbridge_server 会显示有新的 client 连接上，否则请检查步骤 4 中的设置。此时可以在页面中读取到飞行平台的状态信息。
+  5. 安装 rosbridge serverrosbridge 终端模式下
+		  sudo apt-get install ros-jade-rosbridge-server 详细信息参考onboard文件下的DJI_Onboard_API_ROS_Sample
+ 6.  浏览器中打开 “sdk_keyboard_demo.html” 。rosbridge_server 会显示有新的 client 连接上，否则请检查步骤 4 中的设置。此时可以在页面中读取到飞行平台的状态信息。
 
 + 测试通信链路。在 sdk_keyboard_demo 页面中点击“Activation”。如果 PC 和飞行平台之间的链接畅通，页面上可以看到返回码。否则请检查链路连接状况。
 
@@ -517,7 +518,7 @@ DJI Onboard API 相关的命令分为三大类：
 </tr>
 
 <tr>
- <th rowspan="3">0xFE 透传数据</th>
+ <th rowspan="3">0xFE 透传数据（机载设备至移动设备）</th>
   <th>数据类型</th>
   
   <th>偏移（字节）</th>
@@ -786,6 +787,15 @@ DJI Onboard API 相关的命令分为三大类：
   <td>无应答数据</td>
 <tr>
 </table>
+**对数据内容的进一步说明**
+
+_alti_是气压计和IMU融合的结果，单位为气压值；_height_是超声波、气压计和IMU融合的结果，表示相对起飞点的高度，单位是米。如果飞行器上没有超声波传感器（没有安装Guidance），或者有超声波传感器但是相对地面的距离超过3米（距离过远时超声波测量值不稳定），则_height_主要由气压计提供，因此在室内环境中可能会出现超过3米时飞行器因为气压计不稳突然飘动的问题，使用时一定要注意。
+
+因为_height_是相对起飞点的高度，因此如果上电后不起飞，这个数值不会刷新成有意义的值。
+
+_GPS_ 信息中的 _lati_, _longti_ 均为弧度制。
+
+IMU外发的加速度和角速度都是经过滤波算法处理的结果，我们会在未来的版本中加入标志位允许IMU外发传感器的原始数据。
 
 ##三.控制模式说明
 ###3.1 模式标志位说明
@@ -864,7 +874,7 @@ DJI Onboard API 相关的命令分为三大类：
 在某些模式中，水平坐标系和偏航坐标系可以是任意的。
 
 经过多种模式的组合，共有 14 种模式 (模式标志指的是 1byte 标志位中的每个 bit 应该如何取值可以实现该模式。数值为 X 的 bit 说明该模式不判断该位置，但是该位置的取值与选择的坐标系有关。这里“0b”表示的是二进制表示，后八位数字构成一个0-255的整数)；
-
+  **PS：关于水平方向上得控制模式解释如下：HORI_ATTI_TILT_ANG对应控制的是转角（单位°），Ground坐标系下给roll赋正值x，将向正东方向转x°，Body坐标系下给roll赋值将向机头正方向的右边转x°，以此类推。HORI_POS对应控制的是距离（单位米），Ground坐标系下给roll赋正值x，将向正东方向运动x米，Body坐标系下给roll赋值将向机头正方向的右边运动x米。HORI_VEL对应控制速度（单位m/s），Ground坐标系下给roll赋正值x ，将向正东方向运动x m/s，Body坐标系下给roll赋值将向机头正方向的右边运动xm/s。**
 
 |模式编号|组合形式|输入数值范围<br>(throttle/pitch&roll/yaw)|模式标志|
 |--------|--------|-----------------------------------------|--------|
@@ -908,280 +918,9 @@ HORI_POS模式的输入量是相对位置。这个设计是为了兼顾GPS飞行
 
   **备注：Ground 坐标系的高度方向与人对飞行控制的直觉不符，因此我们将竖直方向的高度和速度都调整成了以天空方向为正，也即发送数值为正的速度会让飞行平台远离地面。但是调整高度方向并不改变Ground 坐标系的另外两个轴的方向和顺序。**
 
-<br>
-
-#### API 示例
-
-假设使用以下 C/C++枚举类型表示会话方式：
-
-```c
-enum SESSION_MODE {
-  SESSION_MODE1,
-  SESSION_MODE2,
-  SESSION_MODE3
-}
-```
-
-命令数据包的回调接口函数定义如下：
-
-    typedef void (*CMD_CALLBACK_FUNC)(const void* p_data, unsigned int n_size)
-    
-假设通信中发送协议数据的函数定义如下：
-
-    unsigned int Linklayer_Send(SESSION_MODE session_mode, const void* p_data, unsigned int n_size, char enc_type, unsigned short ack_timeout, unsigned char retry_time, CMD_CALLBACK_FUNC cmd_callback)
-    
-参数 session_mode：会话方式。<br>
-参数 p_data：指向待发协议数据流的起始地址。<br>
-参数 n_size：协议数据流的大小。<br>
-参数 enc_type：是否采用加密发送。<br>
-参数 ack_timeout：使用会话方式 3 时接收端应答的超时时间，单位 ms。<br>
-参数 retry_time:使用会话方式 3 接收端不应答时，发送端重发的次数。<br>
-参数 cmd_callback:回调函数接口。<br>
-
-**备注：由于会话方式 3 是一种可靠会话方式，开发者在协议链路层实现中应考虑数据丢包后的重发机制，在设计链路层发送接口时应提供超时时间、重发次数等参数。**
-
----
-<br>
-
-
-<br>
-
-####命令集
-
-#####命令集 0x00 激活验证类 
-
-API 激活验证命令集的所有命令权限级别为 0，即所有用户都可以使用命令集中的命令对飞机进行激活与版本查询等操作。激活 API 通过 DJI Pilot 与 DJI Server 连接，需要手机连接互联网。
-
-######命令码 0x00 获取 API 版本
-
-
-推荐接收应答数据的 C/C++结构体：
-
-```c
-typedef struct {
-  unsigned short version_ack;
-  unsigned int varsion_crc;
-  signed char version_number[32];
-} version_query_data_t;
-```
-
-假设获取 API 版本命令的回调函数为：
-
-```c
-void print_sdk_version(const void* p_data, unsigned int n_size) {
-  version_quesry_data_t* p_version = (version_query_data_t*)p_data;
-  if (p_version->version_ack == 0) {
-    printf("%s\n",p_version->version_name);
-  }
-}
-```
-
-应用程序中发送请求获取 API 版本命令的操作如下：
-
-```c
-unsigned char cmd_buf[3];
-cmd_buf[0] = 0x00; //command set
-cmd_buf[1] = 0x00; //command id
-cmd+buf[2] = 0x00; //command data, an arbitrary number as said above
-Linklayer_Send(SESSION_MODE3,
-                cmd_buf,
-                3,
-                0,
-                200.
-                3,
-                print_sdk_version
-};
-```  
-
-以上使用的会话方式 3 进行 API 版本获取请求，飞机收到请求并响应后，应用程序相应的回调函数 print_sdk_version 会执行，并输出版本信息示例如下：
-
-    SDK vX.X XXXX
-
-<br>
-####### 命令码 0x01 激活 API
-
-<table>
-
-
-</table>
-
-推荐发送命令数据的 C/C++结构体
-
-```c
-typedef __attribute_((__packed__)) struct { //1 byte aligned
-  unsigned int app_id;
-  unsigned int ap_api_level;
-  unsigned int app_ver;
-  unsigned char app_bundle_id[32];
-} activation_data_t;
-```
-
 **备注：文档中介绍的结构体示例都要求 1 字节对齐。开发者需要根据自身的开发编程环境及编程语言保证结构体的对齐方式为 1 字节对齐。**
-
-推荐接收应答数据的 C/C++枚举类型为：
-
-```c
-enum ErrorCodeForActivatie {
-  errActivateSuccess,
-  errActivateInvalidParamLength,
-  errActivateDataIsEncrypted,
-  errActivateNewDevice,
-  errActivateDJIAppNotConnected.
-  errActivateDJIAppNoInternet,
-  errActivateDJIServerReject,
-  errActivateLevelError
-};
-```
-
-假设激活 API 命令的回调函数为：
-
-```c
-void activation_callback(const void* p_data, unsigned int n_size) {
-
-}
-```
-
-应用程序中发送激活 API 命令的操作如下：
-
-```c
-unsigned char com_buf[46];
-activation_data_t activation_request_data;
-//USER TODO...
-//activation_request_data.app_id        =0x00;
-//activation_request_data.app_api_level =0x00;
-//activation_request_data.app_ver       =0x00;
-//memset(activation_request_data.app_bundle_id,0,32)
-cmd_buf[0] = 0x00; //command set
-cmd_buf[1] = 0x01; //command id
-memcpy((void*)&cmd_buf[2], (void*)&activation_request_data),sizeof(activation_data_t));
-Linklayer_Send(SESSION_MODE3,
-                cmd_buf,
-                46,
-                0,
-                200,
-                3,
-                activation_callback
-  );
-  
-```
-
-以上使用的会话方式 3 进行激活 API 请求，飞机收到请求并响应后，应用程序相应的回调函数 activation_callback 会执行，可以判断是否激活成功。
-
-<br>
-####### 命令码 0xFE 透传数据（机载设备至移动设备）
-
-机载设备发送给移动的数据包。最大包大小为 100 字节，带宽约 8KB/s。
-
-
-
-```c
-char cmd_buf[10];
-cmd_buf[0] = 0x00;
-cmd_buf[1] = 0xFE;
-memcpy(&cmd_buf[2], "Hello!", 7);
-Linklayer_Send(SESSION_MODE3,
-                cmd_buf,
-                9,
-                0,
-                200,
-                3,
-                0
-);
-```
-
-<br>
-##### 命令集 0x01 飞行控制类 
-
-###### 命令码 0x00 请求获得控制权
-
-
-飞机可以接受三种设备的控制输入：遥控器、移动设备、机载设备而。三种设备的控制输入的优先级最大是遥控器，其次是移动设备，优先级最低是机载设备。假设请求获得控制权命令的回调函数为：
-
-```c
-void get_control_callback(const void* p_data, unsigned int n_size) {
-
-}
-```
-
-应用程序中发送激活 API 命令的操作如下：
-
-```c
-unsigned char cmd_buf[46];
-cmd_buf[0] = 0x01; //command set
-cmd_buf[1] = 0x00; //command id
-cmd_buf[2] = 0x01; //get control
-Linklayer_send(SESSION_MODE3,
-                cmd_buf,
-                3,
-                1,
-                200,
-                3,
-                get_control_callback
-);
-```
-
-以上使用的会话方式 3 进行获取控制权请求，飞机收到请求并响应后，应用程序相应的回调函数 get_control_callback 会执行，可以判断是否成功。
-
-**备注：获得控制权请求需在激活成功后进行，激活成功后，机载设备和飞机的通信必须采用密文通信。**
-
-<br>
-###### 命令码 0x01-0x02 状态控制命令
-
-机载设备对飞机的状态控制分为两个阶段。
-
-第一个阶段是发送命令码为 0x01 的状态控制指令。
-
-
-<br>
-
-######命令码 0x03 姿态控制命令
-
-<table>
-
-
-</table>
-
-<br>
-推荐发送姿态控制命令数据的 C/C++结构体
-
-```c
-typedef __attribute__((__packed__)) struct { // 1 byte aligned
-  unsigned char ctrl_flag;
-  float roll_or_x;
-  float pitch_or_y;
-  float yaw;
-  float throttle_or_z;
-} control_input;
-```
-
-**备注：文档中介绍的结构体示例都要求 1 字节对齐。开发者需要根据自身的开发编程环境及编程语言保证结构体的对齐方式为 1 字节对齐。**
-
-根据模式标志位的值，四个输入控制量会被解释成不同含义的输入，有些情况下是 Body 坐标系，有些情况下是 Ground 坐标系。关于坐标系和模式标志位的说明请参考附述章节。
-
-**注意！非常重要：控制模式有进入条件限制：**
-
-- 当且仅当GPS信号正常（health\_flag >=3）时，才可以使用水平**位置**控制（HORI_POS）相关的控制指令
-- 当GPS信号正常（health\_flag >=3），或者Gudiance系统正常工作（连接安装正确）时，可以使用水平**速度**控制（HORI_VEL）相关的控制指令
-
-**关于GPS信号健康度的获取，请参考“命令码 0x00 标准数据包”**
-**关于位置控制和速度控制相关的指令，请参考附述章节**
-
-
-<br>
-##### 命令集 0x02 飞控外发的数据 
-
-###### 命令码 0x00 标准数据包
-
-飞控外发的状态数据包可以通过 DJI N1 PC 调参软件配置。可以配置状态包是否发送及发送的频率。
-
-<table>
-
-</table>
-
-第一个状态包是时间戳包，之后的状态包偏移字节是不固定的，根据该状态包之前的状态包是否发送而定。
-
-标准数据包中各个状态包的数据段含义如下表所示：
-
+###3.3 标准数据包含义说明
+**标准数据包中各个状态包的数据段含义如下表所示：**
 <table>
 <tr>
   <td colspan="5" align="middle">标志数据包</td>
@@ -1473,174 +1212,6 @@ void recv_std_package (unsigned char* pbuf, unsigned int len) {
 
 **备注：文档中介绍的结构体示例都要求 1 字节对齐。开发者需要根据自身的开发编程环境及编程语言保证结构体的对齐方式为 1 字节对齐。**
 
-<br>
-
-**对数据内容的进一步说明**
-
-_alti_是气压计和IMU融合的结果，单位为气压值；_height_是超声波、气压计和IMU融合的结果，表示相对起飞点的高度，单位是米。如果飞行器上没有超声波传感器（没有安装Guidance），或者有超声波传感器但是相对地面的距离超过3米（距离过远时超声波测量值不稳定），则_height_主要由气压计提供，因此在室内环境中可能会出现超过3米时飞行器因为气压计不稳突然飘动的问题，使用时一定要注意。
-
-因为_height_是相对起飞点的高度，因此如果上电后不起飞，这个数值不会刷新成有意义的值。
-
-_GPS_ 信息中的 _lati_, _longti_ 均为弧度制。
-
-IMU外发的加速度和角速度都是经过滤波算法处理的结果，我们会在未来的版本中加入标志位允许IMU外发传感器的原始数据。
-
-<br>
 
 
----
-<br>
-
-## 飞行控制附加说明 
-
-
-
-
-
-
-
-
-
-# 欢迎使用马克飞象
-
-@(示例笔记本)[马克飞象|帮助|Markdown]
-
-**马克飞象**是一款专为印象笔记（Evernote）打造的Markdown编辑器，通过精心的设计与技术实现，配合印象笔记强大的存储和同步功能，带来前所未有的书写体验。特点概述：
- 
-- **功能丰富** ：支持高亮代码块、*LaTeX* 公式、流程图，本地图片以及附件上传，甚至截图粘贴，工作学习好帮手；
-- **得心应手** ：简洁高效的编辑器，提供桌面[离线客户端][1]，支持移动端 Web；
-- **深度整合** ：支持选择笔记本和添加标签，支持从印象笔记跳转编辑，轻松管理。
-
--------------------
-
-[TOC]
-
-## Markdown简介
-
-> Markdown 是一种轻量级标记语言，它允许人们使用易读易写的纯文本格式编写文档，然后转换成格式丰富的HTML页面。    —— [维基百科](https://zh.wikipedia.org/wiki/Markdown)
-
-正如您在阅读的这份文档，它使用简单的符号标识不同的标题，将某些文字标记为**粗体**或者*斜体*，创建一个[链接](http://www.example.com)或一个脚注[^demo]。下面列举了几个高级功能，更多语法请按`Ctrl + /`查看帮助。 
-
-### 代码块
-``` python
-@requires_authorization
-def somefunc(param1='', param2=0):
-    '''A docstring'''
-    if param1 > param2: # interesting
-        print 'Greater'
-    return (param2 - param1 + 1) or None
-class SomeClass:
-    pass
->>> message = '''interpreter
-... prompt'''
-```
-### LaTeX 公式
-
-可以创建行内公式，例如 $\Gamma(n) = (n-1)!\quad\forall n\in\mathbb N$。或者块级公式：
-
-$$	x = \dfrac{-b \pm \sqrt{b^2 - 4ac}}{2a} $$
-
-### 表格
-| Item      |    Value | Qty  |
-| :-------- | --------:| :--: |
-| Computer  | 1600 USD |  5   |
-| Phone     |   12 USD |  12  |
-| Pipe      |    1 USD | 234  |
-
-### 流程图
-```flow
-st=>start: Start
-e=>end
-op=>operation: My Operation
-cond=>condition: Yes or No?
-
-st->op->cond
-cond(yes)->e
-cond(no)->op
-```
-
-以及时序图:
-
-```sequence
-Alice->Bob: Hello Bob, how are you?
-Note right of Bob: Bob thinks
-Bob-->Alice: I am good thanks!
-```
-
-> **提示：**想了解更多，请查看**流程图**[语法][2]以及**时序图**[语法][3]。
-
-### 复选框
-
-使用 `- [ ]` 和 `- [x]` 语法可以创建复选框，实现 todo-list 等功能。例如：
-
-- [x] 已完成事项
-- [ ] 待办事项1
-- [ ] 待办事项2
-
-> **注意：**目前支持尚不完全，在印象笔记中勾选复选框是无效、不能同步的，所以必须在**马克飞象**中修改 Markdown 原文才可生效。下个版本将会全面支持。
-
-
-## 印象笔记相关
-
-### 笔记本和标签
-**马克飞象**增加了`@(笔记本)[标签A|标签B]`语法, 以选择笔记本和添加标签。 **绑定账号后**， 输入`(`自动会出现笔记本列表，请从中选择。
-
-### 笔记标题
-**马克飞象**会自动使用文档内出现的第一个标题作为笔记标题。例如本文，就是第一行的 `欢迎使用马克飞象`。
-
-### 快捷编辑
-保存在印象笔记中的笔记，右上角会有一个红色的编辑按钮，点击后会回到**马克飞象**中打开并编辑该笔记。
->**注意：**目前用户在印象笔记中单方面做的任何修改，马克飞象是无法自动感知和更新的。所以请务必回到马克飞象编辑。
-
-### 数据同步
-**马克飞象**通过**将Markdown原文以隐藏内容保存在笔记中**的精妙设计，实现了对Markdown的存储和再次编辑。既解决了其他产品只是单向导出HTML的单薄，又规避了服务端存储Markdown带来的隐私安全问题。这样，服务端仅作为对印象笔记 API调用和数据转换之用。
-
- >**隐私声明：用户所有的笔记数据，均保存在印象笔记中。马克飞象不存储用户的任何笔记数据。**
-
-### 离线存储
-**马克飞象**使用浏览器离线存储将内容实时保存在本地，不必担心网络断掉或浏览器崩溃。为了节省空间和避免冲突，已同步至印象笔记并且不再修改的笔记将删除部分本地缓存，不过依然可以随时通过`文档管理`打开。
-
-> **注意：**虽然浏览器存储大部分时候都比较可靠，但印象笔记作为专业云存储，更值得信赖。以防万一，**请务必经常及时同步到印象笔记**。
-
-## 编辑器相关
-### 设置
-右侧系统菜单（快捷键`Ctrl + M`）的`设置`中，提供了界面字体、字号、自定义CSS、vim/emacs 键盘模式等高级选项。
-
-### 快捷键
-
-帮助    `Ctrl + /`
-同步文档    `Ctrl + S`
-创建文档    `Ctrl + Alt + N`
-最大化编辑器    `Ctrl + Enter`
-预览文档 `Ctrl + Alt + Enter`
-文档管理    `Ctrl + O`
-系统菜单    `Ctrl + M` 
-
-加粗    `Ctrl + B`
-插入图片    `Ctrl + G`
-插入链接    `Ctrl + L`
-提升标题    `Ctrl + H`
-
-## 关于收费
-
-**马克飞象**为新用户提供 10 天的试用期，试用期过后需要[续费](maxiang.info/vip.html)才能继续使用。未购买或者未及时续费，将不能同步新的笔记。之前保存过的笔记依然可以编辑。
-
-
-## 反馈与建议
-- 微博：[@马克飞象](http://weibo.com/u/2788354117)，[@GGock](http://weibo.com/ggock "开发者个人账号")
-- 邮箱：<hustgock@gmail.com>
-
----------
-感谢阅读这份帮助文档。请点击右上角，绑定印象笔记账号，开启全新的记录与分享体验吧。
-
-
-
-
-[^demo]: 这是一个示例脚注。请查阅 [MultiMarkdown 文档](https://github.com/fletcher/MultiMarkdown/wiki/MultiMarkdown-Syntax-Guide#footnotes) 关于脚注的说明。 **限制：** 印象笔记的笔记内容使用 [ENML][4] 格式，基于 HTML，但是不支持某些标签和属性，例如id，这就导致`脚注`和`TOC`无法正常点击。
-
-
-  [1]: https://chrome.google.com/webstore/detail/kidnkfckhbdkfgbicccmdggmpgogehop
-  [2]: http://adrai.github.io/flowchart.js/
-  [3]: http://bramp.github.io/js-sequence-diagrams/
-  [4]: https://dev.yinxiang.com/doc/articles/enml.php
 
