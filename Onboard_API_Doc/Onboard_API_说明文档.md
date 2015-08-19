@@ -246,7 +246,7 @@ MATRICE 100 被设计为可以使用遥控器、机载设备和移动设备进�
 
    ```
    |<--------------Protocol Frame Header--------------->|<--Protocol Frame Data-->|<--Protocol Frame Checksum-->|
-   |SOF|LEN|VER|SESSION|A|RES0|PADDING|ENC|RES1|SEQ|CRC16|DATA |CRC32|
+   |SOF|LEN|VER|SESSION|A|RES0|PADDING|ENC|RES1|SEQ|CRC16|                         DATA               |                            CRC32                         |
    ```
  
 <br> 
@@ -817,7 +817,7 @@ DJI Onboard API 相关的命令分为三大类：
 ###2.6 通信会话加密机制
    ```
    |<--------------Protocol Frame Header--------------->|<--Protocol Frame Data-->|<--Protocol Frame Checksum-->|
-   |SOF|LEN|VER|SESSION|A|RES0|PADDING|ENC|RES1|SEQ|CRC16|DATA |CRC32|
+   |SOF|LEN|VER|SESSION|A|RES0|PADDING|ENC|RES1|SEQ|CRC16|                  DATA                      |                         CRC32                      |
    ```
    通信会话加密机制防止第三方直接窜入修改，夺取控制权，上述协议帧帧头和CRC校验部分不加密，数据段加密。
    具体哪些指令需要加密发送如下所示：
