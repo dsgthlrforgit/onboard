@@ -859,11 +859,12 @@ DJI Onboard API 相关的命令分为三大类：
   <td>bit[0]</td>
   <td>0b0：偏航坐标系为 Ground 系<br>0b1：偏航坐标系为 Body 系</td>
 </tr>
-<table>
+</table>
 
 在某些模式中，水平坐标系和偏航坐标系可以是任意的。
 
 经过多种模式的组合，共有 14 种模式 (模式标志指的是 1byte 标志位中的每个 bit 应该如何取值可以实现该模式。数值为 X 的 bit 说明该模式不判断该位置，但是该位置的取值与选择的坐标系有关。这里“0b”表示的是二进制表示，后八位数字构成一个0-255的整数)；
+
 
 |模式编号|组合形式|输入数值范围<br>(throttle/pitch&roll/yaw)|模式标志|
 |--------|--------|-----------------------------------------|--------|
@@ -881,7 +882,6 @@ DJI Onboard API 相关的命令分为三大类：
 |12|VERT_POS<br>HORI_POS<br>YAW_RATE|0m 到最大飞行高度<br>米为单位的相对位置，数值无限制<br>-100 度/s ~ 100 度/s|0b100110XX|
 |13|VERT_THRUST<br>HORI_ATTI_TILT_ANG<br>YAW_ANG|10 ~ 100 （危险，请小心使用）<br>-30 度 ~ 30 度<br>-180 度 ~ 180 度|0b001000XX|
 |14|VERT_THRUST<br>HORI_ATTI_TILT_ANG<br>YAW_RATE|10 ~ 100（危险，请小心使用）<br>-30 度 ~ 30 度<br>-100 度/s ~ 100 度/s|0b001010XX|
-
 
 HORI_POS模式的输入量是相对位置。这个设计是为了兼顾GPS飞行和未来可能的根据视觉定位系统飞行的需求。想通过GPS飞行时，开发者可以使用飞控外发的位置信息做控制，如果想设计通过视觉定位系统飞行的应用，开发者可以使用自己的定位系统的位置进行控制(速度来自Gudiance或者GPS)。开发者自己使用时可以根据需求封装，例如[xuhao1封装的SDK包](https://github.com/xuhao1/dji_sdk/blob/master/src/modules/dji_services.cpp)采用了GPS的封装。
 
