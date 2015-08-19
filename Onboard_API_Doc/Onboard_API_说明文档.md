@@ -1,6 +1,6 @@
 #DJI Onboard API 说明文档
 
-最后更新: 2015年07月28日
+最后更新: 2015年08月19日
 
 *如发现任何错误，请通过Github issue或开发者论坛或邮件反馈给我们。欢迎提交pull request来帮助我们修正问题，关于文档的修改需要符合[格式标准](https://github.com/dji-sdk/onboard/issues/8#issuecomment-115976289)*
 
@@ -10,7 +10,7 @@
 DJI 为开发者提供两种功能完善的飞行控制 API 帮助开发飞行应用：Mobile API 和 Onboard API。Mobile API 是 DJI Mobile SDK 的核心部分，开发者可以基于 iOS/Android 系统上的 SDK
 库编写控制飞行器的移动端应用。而 Onboard API 则提供串行接口（UART），允许开发者将 自己的计算设备挂载到飞行器上，通过有线的方式直接控制飞行器。 
 
-本文档介绍 Onboard API。文档包括两个部分：第一部分是快速入门，包括一些主要功能的 介绍；第二部分是编程指南，介绍所有进行程序控制所需的知识。
+本文档介绍 Onboard API。文档包括四个部分：第一部分是快速入门，包括一些主要功能的 介绍；第二部分是协议说明，介绍所有进行程序控制所需的知识。第三部分是控制模式说明，介绍sdk的控制模式接口。第四部分是编程指南
 
 ## 目录
 
@@ -24,7 +24,7 @@ DJI 为开发者提供两种功能完善的飞行控制 API 帮助开发飞行�
     + 必备硬件
     + 必备软件
     + 步骤
-+ 编程指南
++ 协议说明
   + 协议说明
     + 协议格式
     + 协议格式说明
@@ -34,9 +34,11 @@ DJI 为开发者提供两种功能完善的飞行控制 API 帮助开发飞行�
   + 命令集说明
     +命令及权限
     + 命令集
-+ 飞行控制附加说明
++ 控制模式
   + 坐标系说明
   + 模式标志位说明
+ 
++ 编程指南
   
 ---
 <br> 
@@ -126,6 +128,7 @@ MATRICE 100 被设计为可以使用遥控器、机载设备和移动设备进�
 
 <br> 
 ###1.2 [ROS]通过无线串口控制 MATRICE 100 
+**详细信息参考onboard文件下的DJI_Onboard_API_ROS_Sample**
 
 在这个示例中，我们使用示例代码“dji_sdk_keyboard_ctrl”对 MATRICE 100 进行远程控制。该代码基于 ROS 软件包 keyboardteleop.js。我们设计了一个简单的 HTML GUI 帮助开发者熟悉如何使用键盘和鼠标控制 MATRICE 100。
 
@@ -144,7 +147,6 @@ MATRICE 100 被设计为可以使用遥控器、机载设备和移动设备进�
 6. 5V 输出 DC-DC 电源模块（淘宝购买）
 
   注意：MATRICE 100 上不提供 5V 的电源输出，所以为了给无线串口供电，开发者需要自己购买 5V 电源模块
-
 
 <br> 
 #### 1.2.2 必备软件
@@ -217,7 +219,8 @@ MATRICE 100 被设计为可以使用遥控器、机载设备和移动设备进�
     } 
     ```
   5. 安装 rosbridge serverrosbridge 终端模式下
-		  sudo apt-get install ros-jade-rosbridge-server 详细信息参考onboard文件下的DJI_Onboard_API_ROS_Sample
+		  sudo apt-get install ros-jade-rosbridge-server 
+		  
  6.  浏览器中打开 “sdk_keyboard_demo.html” 。rosbridge_server 会显示有新的 client 连接上，否则请检查步骤 4 中的设置。此时可以在页面中读取到飞行平台的状态信息。
 
 + 测试通信链路。在 sdk_keyboard_demo 页面中点击“Activation”。如果 PC 和飞行平台之间的链接畅通，页面上可以看到返回码。否则请检查链路连接状况。
@@ -237,14 +240,9 @@ MATRICE 100 被设计为可以使用遥控器、机载设备和移动设备进�
 ---
 
 <br> 
-## 二 编程指南
+## 二 协议说明
 
-编程指南中介绍了如何通过程序与 MATRICE 100 交互并发送控制指令。我们推荐开发者先通过快速入门实现我们的示例代码，然后再阅读编程指南。
-
-<br> 
-###2.1 协议说明 
-
-####2.1.1 协议格式
+###2.1 协议格式
 
    ```
    |<--------------Protocol Frame Header--------------->|<--Protocol Frame Data-->|<--Protocol Frame Checksum-->|
@@ -253,7 +251,7 @@ MATRICE 100 被设计为可以使用遥控器、机载设备和移动设备进�
  
 <br> 
 
-#### 协议帧头格式说明
+###2.2 协议帧头格式说明
 
 <table>
 <tr>
@@ -354,7 +352,7 @@ MATRICE 100 被设计为可以使用遥控器、机载设备和移动设备进�
 DATA 长度大小不固定，最大长度为 1007。crc32字节索引根据 DATA 长度大小而定。
 
 <br>
-#### 2.1.2 协议数据段说明
+###2.3 协议数据段说明
 
 飞控和机载设备通信的数据包分为三类：
 
@@ -405,7 +403,7 @@ DATA 长度大小不固定，最大长度为 1007。crc32字节索引根据 DATA
 
 <br>
 
-####2.1.3 通信会话机制
+###2.4 通信会话机制
 
 协议设计使用了会话机制，以保证命令数据和应答数据不会因为丢包而出现通信双方异常。通信双方在向对方发起通信会话时，可以根据需要通过设置协议的 SESSION 字段来选择会话方式。协议中设计了三种会话方式。
 
@@ -414,9 +412,10 @@ DATA 长度大小不固定，最大长度为 1007。crc32字节索引根据 DATA
 |方式1|0|发送端不需要接收端应答|
 |方式2|1|发送端需要接收端应答数据，但是可以容忍应答数据丢包|
 |方式3|2-31|发送端需要正确收到接收端的应答包。<br>发送端使用这些session 发送命令数据包时，接收端应答后要保存当前的应答包作为该 session 的应答数据，应答包中包含该命令数据包中的 sequence number 和 session id。如果通信过程中，发送端没有正确收到应答包，可以重新发送该命令数据包，接收端收到后将保存的应答包重新发送回去。<br>下一次，如果发送端使用和上一次相同的 session id，但不同的 sequence number 来发送命令数据包时，接收端会丢弃上一次保存的 session 应答数据，重新保存新的 session 应答数据。|
-###2.1.4命令集说明 
+**备注：由于会话方式 3 是一种可靠会话方式，开发者在协议链路层实现中应考虑数据丢包后的重发机制，在设计链路层发送接口时应提供超时时间、重发次数等参数。**
+###2.5命令集说明 
 
-####命令及权限
+####2.5.1命令及权限
 
 DJI Onboard API 相关的命令分为三大类：
 
@@ -434,7 +433,26 @@ DJI Onboard API 相关的命令分为三大类：
 |1|相机和云台的控制命令|
 |2|飞行控制命令|
 
-####2.1.5 数据包命令集和命令码集合图表
+####2.5.2 数据包命令集和命令码集合图表
++ 命令集 0x00 激活验证类
+   + 命令码 0x00 获取 API 版本
+   + 命令码 0x01 激活 API
+   + 命令码 0xFE 透传数据（机载设备至移动设备）
++  命令集 0x01 飞行控制类
+	+ 命令码 0x00 请求获得控制权
+	+ 命令码 0x01-0x02 状态控制命令
+	+ 命令码 0x03 姿态控制命令
++ 命令集 0x02 飞控外发的数据
+    + 命令码 0x00 标准数据包
+    + 命令码 0x01 控制权归属切换
+    + 命令码 0x02 透传数据（移动设备至机载设备）
+
+**备注:**
++ API 激活验证命令集的所有命令权限级别为 0，即所有用户都可以使用命令集中的命令对飞机进行激活与版本查询等操作。激活 API 通过 DJI Pilot 与 DJI Server 连接，需要手机连接互联网。
++ 机载设备发送给移动的数据包。最大包大小为 100 字节，带宽约 8KB/s。
++ 飞机可以接受三种设备的控制输入：遥控器、移动设备、机载设备而。三种设备的控制输入的优先级最大是遥控器，其次是移动设备，优先级最低是机载设备。
++ 机载设备对飞机的状态控制分为两个阶段。第一个阶段是发送命令码为 0x01 的状态控制指令。飞机收到状态控制指令之后会立即发送表明已经收到指令的应答数据包，正常情况飞机返回表示“开始执行”应答数据；但如果飞控正在执行一条之前的指令，则返回“执行失败”的应答数据。飞控开始执行指令之后会尝试切换状态模式，并把执行成功与否的结果保存下来。第二个阶段是机载设备在发送状态控制指令之后可以开始尝试发送命令码为 0x02 的执行结果查询命令。
+
 
 <table>
 <tr>
@@ -789,137 +807,14 @@ DJI Onboard API 相关的命令分为三大类：
 </table>
 **对数据内容的进一步说明**
 
-_alti_是气压计和IMU融合的结果，单位为气压值；_height_是超声波、气压计和IMU融合的结果，表示相对起飞点的高度，单位是米。如果飞行器上没有超声波传感器（没有安装Guidance），或者有超声波传感器但是相对地面的距离超过3米（距离过远时超声波测量值不稳定），则_height_主要由气压计提供，因此在室内环境中可能会出现超过3米时飞行器因为气压计不稳突然飘动的问题，使用时一定要注意。
++ _alti_是气压计和IMU融合的结果，单位为气压值；_height_是超声波、气压计和IMU融合的结果，表示相对起飞点的高度，单位是米。如果飞行器上没有超声波传感器（没有安装Guidance），或者有超声波传感器但是相对地面的距离超过3米（距离过远时超声波测量值不稳定），则_height_主要由气压计提供，因此在室内环境中可能会出现超过3米时飞行器因为气压计不稳突然飘动的问题，使用时一定要注意。
 
-因为_height_是相对起飞点的高度，因此如果上电后不起飞，这个数值不会刷新成有意义的值。
++ 因为_height_是相对起飞点的高度，因此如果上电后不起飞，这个数值不会刷新成有意义的值。
 
-_GPS_ 信息中的 _lati_, _longti_ 均为弧度制。
++ _GPS_ 信息中的 _lati_, _longti_ 均为弧度制。
 
-IMU外发的加速度和角速度都是经过滤波算法处理的结果，我们会在未来的版本中加入标志位允许IMU外发传感器的原始数据。
-
-##三.控制模式说明
-###3.1 模式标志位说明
-
-模式标志位代表不同模式的配置。因为多旋翼的结构特点，飞行控制的时候，要把控制信息分解成三部分，竖直、水平(分为X，Y两个方向)和偏航共四个自由度，每个部分都有几种选择。
-
-<table>
-<tr>
-  <th>类别</th>
-  <th>模式</th>
-  <th>说明</th>
-</tr>
-<tr>
-  <td rowspan="3">竖直方向</td>
-  <td>VERT_POS</td>
-  <td>垂直方向上控制的是位置，输入的控制量必须为对地面的高度量</td>
-</tr>
-<tr>
-  <td>VERT_VEL</td>
-  <td>垂直方向上控制的是速度</td>
-</tr>
-<tr>
-  <td>VERT_THRUST</td>
-  <td>垂直方向上控制的是油门百分比(0-100)</td>
-</tr>
-
-<tr>
-  <td rowspan="3">水平方向</td>
-  <td>HORI_ATTI_TILT_ANG</td>
-  <td>水平方向控制的是pitch 和 roll 两个方向上的倾角（和加速度对应），<b>可以选择这个 offset 是 ground 坐标系下还是body 坐标系下</b></td>
-</tr>
-<tr>
-  <td>HORI_POS</td>
-  <td>水平方向控制的是 pitch 和 roll 两个方向上的位置offset，<b>可以选择这个 offset 是 ground 坐标系下还是body 坐标系下</b></td>
-</tr>
-<tr>
-  <td>HORI_VEL</td>
-  <td>水平方向控制的是 pitch 和 roll 两个方向上的速度，<b>可以选择这个速度是 ground 坐标系下还是 body 坐标系下</b></td>
-</tr>
-
-<tr>
-  <td rowspan="2">偏航</td>
-  <td>YAW_ANG</td>
-  <td>偏航控制一个 ground 坐标系下的目标角度</td>
-</tr>
-<tr>
-  <td>YAW_RATE</td>
-  <td>偏航控制目标角速度，<b>可以选择这个角速度是 ground 坐标系下还是 body 坐标系下</b></td>
-</tr>
-</table>
-
-<table>
-<tr>
-  <td rowspan="5">模式标识位<br>1byte</td>
-  <td>bit[7:6]</td>
-  <td>0b00：水平倾角<br>0b01：水平速度<br>0b10：水平位置</td>
-</tr>
-<tr>
-  <td>bit[5:4]</td>
-  <td>0b00：垂直速度<br>0b01：垂直位置<br>0b10：垂直推力</td>
-</tr>
-<tr>
-  <td>bit[3]</td>
-  <td>0b0: 偏航 YAW 角度<br>0b1: 偏航 YAW 角速度</td>
-</tr>
-<tr>
-  <td>bit[2:1]</td>
-  <td>0b00：水平坐标系为 Ground 系<br>0b01：水平坐标系为 Body 系</td>
-</tr>
-<tr>
-  <td>bit[0]</td>
-  <td>0b0：偏航坐标系为 Ground 系<br>0b1：偏航坐标系为 Body 系</td>
-</tr>
-</table>
-
-在某些模式中，水平坐标系和偏航坐标系可以是任意的。
-
-经过多种模式的组合，共有 14 种模式 (模式标志指的是 1byte 标志位中的每个 bit 应该如何取值可以实现该模式。数值为 X 的 bit 说明该模式不判断该位置，但是该位置的取值与选择的坐标系有关。这里“0b”表示的是二进制表示，后八位数字构成一个0-255的整数)；
-  **PS：关于水平方向上得控制模式解释如下：HORI_ATTI_TILT_ANG对应控制的是转角（单位°），Ground坐标系下给roll赋正值x，将向正东方向转x°，Body坐标系下给roll赋值将向机头正方向的右边转x°，以此类推。HORI_POS对应控制的是距离（单位米），Ground坐标系下给roll赋正值x，将向正东方向运动x米，Body坐标系下给roll赋值将向机头正方向的右边运动x米。HORI_VEL对应控制速度（单位m/s），Ground坐标系下给roll赋正值x ，将向正东方向运动x m/s，Body坐标系下给roll赋值将向机头正方向的右边运动xm/s。**
-
-|模式编号|组合形式|输入数值范围<br>(throttle/pitch&roll/yaw)|模式标志|
-|--------|--------|-----------------------------------------|--------|
-|1|VERT_VEL<br>HORI_ATTI_TILT_ANG<br>YAW_ANG|-4 m/s ~ 4 m/s<br>-30 度 ~ 30 度<br>-180 度 ~ 180 度|0b000000XX|
-|2|VERT_VEL<br>HORI_ATTI_TILT_ANG<br>YAW_RATE|-4 m/s ~ 4 m/s<br>-30 度 ~ 30 度<br>-100 度/s ~ 100 度/s|0b000010XX|
-|3|VERT_VEL<br>HORI_VEL<br>YAW_ANG|-4 m/s ~ 4 m/s<br>-10 m/s ~ 10 m/s<br>-180 度 ~ 180 度|0b010000XX|
-|4|VERT_VEL<br>HORI_VEL<br>YAW_RATE|-4 m/s ~ 4 m/s<br>-10 m/s ~ 10 m/s<br>-100 度/s ~ 100 度/s|0b010010XX|
-|5|VERT_VEL<br>HORI_POS<br>YAW_ANG|-4 m/s ~ 4 m/s<br>米为单位的相对位置，数值无限制<br>-180 度 ~ 180 度|0b100000XX|
-|6|VERT_VEL<br>HORI_POS<br>YAW_RATE|-4 m/s ~ 4 m/s<br>米为单位的相对位置，数值无限制<br>-100 度/s ~ 100 度/s|0b100010XX|
-|7|VERT_POS<br>HORI_ATTI_TILT_ANG<br>YAW_ANG|0m 到最大飞行高度<br>-30 度 ~ 30 度<br>-180 度 ~ 180 度|0b000100XX|
-|8|VERT_POS<br>HORI_ATTI_TILT_ANG<br>YAW_RATE|0m 到最大飞行高度<br>-30 度 ~ 30 度<br>-100 度/s ~ 100 度/s|0b000110XX|
-|9|VERT_POS<br>HORI_VEL<br>YAW_ANG|0m 到最大飞行高度<br>-10 m/s ~ 10 m/s<br>-180 度 ~ 180 度|0b010100XX|
-|10|VERT_POS<br>HORI_VEL<br>YAW_RATE|0m 到最大飞行高度<br>-10 m/s ~ 10 m/s<br>-100 度/s ~ 100 度/s|0b010110XX|
-|11|VERT_POS<br>HORI_POS<br>YAW_ANG|0m 到最大飞行高度<br>米为单位的相对位置，数值无限制<br>-180 度 ~ 180 度|0b100100XX|
-|12|VERT_POS<br>HORI_POS<br>YAW_RATE|0m 到最大飞行高度<br>米为单位的相对位置，数值无限制<br>-100 度/s ~ 100 度/s|0b100110XX|
-|13|VERT_THRUST<br>HORI_ATTI_TILT_ANG<br>YAW_ANG|10 ~ 100 （危险，请小心使用）<br>-30 度 ~ 30 度<br>-180 度 ~ 180 度|0b001000XX|
-|14|VERT_THRUST<br>HORI_ATTI_TILT_ANG<br>YAW_RATE|10 ~ 100（危险，请小心使用）<br>-30 度 ~ 30 度<br>-100 度/s ~ 100 度/s|0b001010XX|
-
-HORI_POS模式的输入量是相对位置。这个设计是为了兼顾GPS飞行和未来可能的根据视觉定位系统飞行的需求。想通过GPS飞行时，开发者可以使用飞控外发的位置信息做控制，如果想设计通过视觉定位系统飞行的应用，开发者可以使用自己的定位系统的位置进行控制(速度来自Gudiance或者GPS)。开发者自己使用时可以根据需求封装，例如[xuhao1封装的SDK包](https://github.com/xuhao1/dji_sdk/blob/master/src/modules/dji_services.cpp)采用了GPS的封装。
-
-我们建议用户在室内环境中，如果没有安装Gudiance或者飞行高度超过3m时，不要使用竖直方向的位置控制，因为室内环境中气压计读数不准，影响控制器的表现。
-
-**注意！非常重要：控制模式有进入条件限制：**
-
-- 当且仅当GPS信号正常（health\_flag >=3）时，才可以使用水平**位置**控制（HORI_POS）相关的控制指令
-- 当GPS信号正常（health\_flag >=3），或者Gudiance系统正常工作（连接安装正确）时，可以使用水平**速度**控制（HORI_VEL）相关的控制指令
-
-###3.2 坐标系说明
-
-1. Body 坐标系：
-
-  ![bFrame](Images/axis.png)
-  
-2. Ground 坐标系（北东地坐标系）：
-  
-  + 北-x
-  + 东-y
-  + 指向地心-z 
-
-  坐标满足右手定则。ground 坐标系下通用的航向定义是以北为 0，顺时针到 180 度，逆时针到-180 度。这样用-180 到 180 度的数值表示飞行平台在空间中的朝向。
-
-  **备注：Ground 坐标系的高度方向与人对飞行控制的直觉不符，因此我们将竖直方向的高度和速度都调整成了以天空方向为正，也即发送数值为正的速度会让飞行平台远离地面。但是调整高度方向并不改变Ground 坐标系的另外两个轴的方向和顺序。**
-
-**备注：文档中介绍的结构体示例都要求 1 字节对齐。开发者需要根据自身的开发编程环境及编程语言保证结构体的对齐方式为 1 字节对齐。**
-###3.3 标准数据包含义说明
++ IMU外发的加速度和角速度都是经过滤波算法处理的结果，我们会在未来的版本中加入标志位允许IMU外发传感器的原始数据。
+###2.6 标准数据包含义说明
 **标准数据包中各个状态包的数据段含义如下表所示：**
 <table>
 <tr>
@@ -1215,3 +1110,288 @@ void recv_std_package (unsigned char* pbuf, unsigned int len) {
 
 
 
+
+##三.控制模式说明
+###3.1 模式标志位说明
+
+模式标志位代表不同模式的配置。因为多旋翼的结构特点，飞行控制的时候，要把控制信息分解成三部分，竖直、水平(分为X，Y两个方向)和偏航共四个自由度，每个部分都有几种选择。
+
+<table>
+<tr>
+  <th>类别</th>
+  <th>模式</th>
+  <th>说明</th>
+</tr>
+<tr>
+  <td rowspan="3">竖直方向</td>
+  <td>VERT_POS</td>
+  <td>垂直方向上控制的是位置，输入的控制量必须为对地面的高度量</td>
+</tr>
+<tr>
+  <td>VERT_VEL</td>
+  <td>垂直方向上控制的是速度</td>
+</tr>
+<tr>
+  <td>VERT_THRUST</td>
+  <td>垂直方向上控制的是油门百分比(0-100)</td>
+</tr>
+
+<tr>
+  <td rowspan="3">水平方向</td>
+  <td>HORI_ATTI_TILT_ANG</td>
+  <td>水平方向控制的是pitch 和 roll 两个方向上的倾角（和加速度对应），<b>可以选择这个 offset 是 ground 坐标系下还是body 坐标系下</b></td>
+</tr>
+<tr>
+  <td>HORI_POS</td>
+  <td>水平方向控制的是 pitch 和 roll 两个方向上的位置offset，<b>可以选择这个 offset 是 ground 坐标系下还是body 坐标系下</b></td>
+</tr>
+<tr>
+  <td>HORI_VEL</td>
+  <td>水平方向控制的是 pitch 和 roll 两个方向上的速度，<b>可以选择这个速度是 ground 坐标系下还是 body 坐标系下</b></td>
+</tr>
+
+<tr>
+  <td rowspan="2">偏航</td>
+  <td>YAW_ANG</td>
+  <td>偏航控制一个 ground 坐标系下的目标角度</td>
+</tr>
+<tr>
+  <td>YAW_RATE</td>
+  <td>偏航控制目标角速度，<b>可以选择这个角速度是 ground 坐标系下还是 body 坐标系下</b></td>
+</tr>
+</table>
+
+<table>
+<tr>
+  <td rowspan="5">模式标识位<br>1byte</td>
+  <td>bit[7:6]</td>
+  <td>0b00：水平倾角<br>0b01：水平速度<br>0b10：水平位置</td>
+</tr>
+<tr>
+  <td>bit[5:4]</td>
+  <td>0b00：垂直速度<br>0b01：垂直位置<br>0b10：垂直推力</td>
+</tr>
+<tr>
+  <td>bit[3]</td>
+  <td>0b0: 偏航 YAW 角度<br>0b1: 偏航 YAW 角速度</td>
+</tr>
+<tr>
+  <td>bit[2:1]</td>
+  <td>0b00：水平坐标系为 Ground 系<br>0b01：水平坐标系为 Body 系</td>
+</tr>
+<tr>
+  <td>bit[0]</td>
+  <td>0b0：偏航坐标系为 Ground 系<br>0b1：偏航坐标系为 Body 系</td>
+</tr>
+</table>
+
+在某些模式中，水平坐标系和偏航坐标系可以是任意的。
+
+经过多种模式的组合，共有 14 种模式 (模式标志指的是 1byte 标志位中的每个 bit 应该如何取值可以实现该模式。数值为 X 的 bit 说明该模式不判断该位置，但是该位置的取值与选择的坐标系有关。这里“0b”表示的是二进制表示，后八位数字构成一个0-255的整数)；
+  **备注：**
+  关于水平方向上得控制模式解释如下：
+  + HORI_ATTI_TILT_ANG对应控制的是转角（单位°），Ground坐标系下给roll赋正值x，将向正东方向转x°，Body坐标系下给roll赋值将向机头正方向的右边转x°，以此类推。
+  + HORI_POS对应控制的是距离（单位米），Ground坐标系下给roll赋正值x，将向正东方向运动x米，Body坐标系下给roll赋值将向机头正方向的右边运动x米。
+  + HORI_VEL对应控制速度（单位m/s），Ground坐标系下给roll赋正值x ，将向正东方向运动x m/s，Body坐标系下给roll赋值将向机头正方向的右边运动xm/s。
+
+|模式编号|组合形式|输入数值范围<br>(throttle/pitch&roll/yaw)|模式标志|
+|--------|--------|-----------------------------------------|--------|
+|1|VERT_VEL<br>HORI_ATTI_TILT_ANG<br>YAW_ANG|-4 m/s ~ 4 m/s<br>-30 度 ~ 30 度<br>-180 度 ~ 180 度|0b000000XX|
+|2|VERT_VEL<br>HORI_ATTI_TILT_ANG<br>YAW_RATE|-4 m/s ~ 4 m/s<br>-30 度 ~ 30 度<br>-100 度/s ~ 100 度/s|0b000010XX|
+|3|VERT_VEL<br>HORI_VEL<br>YAW_ANG|-4 m/s ~ 4 m/s<br>-10 m/s ~ 10 m/s<br>-180 度 ~ 180 度|0b010000XX|
+|4|VERT_VEL<br>HORI_VEL<br>YAW_RATE|-4 m/s ~ 4 m/s<br>-10 m/s ~ 10 m/s<br>-100 度/s ~ 100 度/s|0b010010XX|
+|5|VERT_VEL<br>HORI_POS<br>YAW_ANG|-4 m/s ~ 4 m/s<br>米为单位的相对位置，数值无限制<br>-180 度 ~ 180 度|0b100000XX|
+|6|VERT_VEL<br>HORI_POS<br>YAW_RATE|-4 m/s ~ 4 m/s<br>米为单位的相对位置，数值无限制<br>-100 度/s ~ 100 度/s|0b100010XX|
+|7|VERT_POS<br>HORI_ATTI_TILT_ANG<br>YAW_ANG|0m 到最大飞行高度<br>-30 度 ~ 30 度<br>-180 度 ~ 180 度|0b000100XX|
+|8|VERT_POS<br>HORI_ATTI_TILT_ANG<br>YAW_RATE|0m 到最大飞行高度<br>-30 度 ~ 30 度<br>-100 度/s ~ 100 度/s|0b000110XX|
+|9|VERT_POS<br>HORI_VEL<br>YAW_ANG|0m 到最大飞行高度<br>-10 m/s ~ 10 m/s<br>-180 度 ~ 180 度|0b010100XX|
+|10|VERT_POS<br>HORI_VEL<br>YAW_RATE|0m 到最大飞行高度<br>-10 m/s ~ 10 m/s<br>-100 度/s ~ 100 度/s|0b010110XX|
+|11|VERT_POS<br>HORI_POS<br>YAW_ANG|0m 到最大飞行高度<br>米为单位的相对位置，数值无限制<br>-180 度 ~ 180 度|0b100100XX|
+|12|VERT_POS<br>HORI_POS<br>YAW_RATE|0m 到最大飞行高度<br>米为单位的相对位置，数值无限制<br>-100 度/s ~ 100 度/s|0b100110XX|
+|13|VERT_THRUST<br>HORI_ATTI_TILT_ANG<br>YAW_ANG|10 ~ 100 （危险，请小心使用）<br>-30 度 ~ 30 度<br>-180 度 ~ 180 度|0b001000XX|
+|14|VERT_THRUST<br>HORI_ATTI_TILT_ANG<br>YAW_RATE|10 ~ 100（危险，请小心使用）<br>-30 度 ~ 30 度<br>-100 度/s ~ 100 度/s|0b001010XX|
+
+HORI_POS模式的输入量是相对位置。这个设计是为了兼顾GPS飞行和未来可能的根据视觉定位系统飞行的需求。想通过GPS飞行时，开发者可以使用飞控外发的位置信息做控制，如果想设计通过视觉定位系统飞行的应用，开发者可以使用自己的定位系统的位置进行控制(速度来自Gudiance或者GPS)。开发者自己使用时可以根据需求封装，例如[xuhao1封装的SDK包](https://github.com/xuhao1/dji_sdk/blob/master/src/modules/dji_services.cpp)采用了GPS的封装。
+
+我们建议用户在室内环境中，如果没有安装Gudiance或者飞行高度超过3m时，不要使用竖直方向的位置控制，因为室内环境中气压计读数不准，影响控制器的表现。
+
+**注意！非常重要：控制模式有进入条件限制：**
+
+- 当且仅当GPS信号正常（health\_flag >=3）时，才可以使用水平**位置**控制（HORI_POS）相关的控制指令
+- 当GPS信号正常（health\_flag >=3），或者Gudiance系统正常工作（连接安装正确）时，可以使用水平**速度**控制（HORI_VEL）相关的控制指令
+
+###3.2 坐标系说明
+
+1. Body 坐标系：
+
+  ![bFrame](Images/axis.png)
+  
+2. Ground 坐标系（北东地坐标系）：
+  
+  + 北-X or Roll 
+  + 东-y or Pitch
+  + 指向地心-z 
+
+  坐标满足右手定则。ground 坐标系下通用的航向定义是以北为 0，顺时针到 180 度，逆时针到-180 度。这样用-180 到 180 度的数值表示飞行平台在空间中的朝向。
+
+  **备注：Ground 坐标系的高度方向与人对飞行控制的直觉不符，因此我们将竖直方向的高度和速度都调整成了以天空方向为正，也即发送数值为正的速度会让飞行平台远离地面。但是调整高度方向并不改变Ground 坐标系的另外两个轴的方向和顺序。**
+
+##四 API编程说明
+假设通信中发送协议数据的函数定义如下：
+```c
+void App_Send_Data(unsigned char flag,		//通信会话方式
+				   uint8_t is_enc, 			//是否采用加密发送
+				   unsigned char  cmd_set,  //命令集
+				   unsigned char cmd_id,    //命令码
+				   unsigned char *pdata,    //数据段
+				   int len,                 //数据段长度
+				   ACK_Callback_Func ack_callback, //回调函数
+				   int timeout ,            //使用会话方式 3 时接收端应答的超时时间，单位 ms
+				   int n                    //使用会话方式 3 接收端不应答时，发送端重发的次数
+					)
+```
+**备注：由于会话方式 3 是一种可靠会话方式，开发者在协议链路层实现中应考虑数据丢包后的重发机制，在设计链路层发送接口时应提供超时时间、重发次数等参数。**
++ 激活API如下所示：
+```c
+/* 数据段结构体 */
+typedef struct
+{
+	uint32_t	app_id;
+	uint32_t	app_api_level;
+	uint32_t	app_ver;
+	uint8_t		app_bundle_id[32];
+}activation_data_t;
+
+/* 接收应答数据结构体 */
+typedef struct
+{
+	uint16_t	version_ack;
+	uint32_t	version_crc;
+	char     	version_name[32];
+}version_query_data_t;
+
+/* 获取 API 版本命令的回调函数 */
+void test_activation_ack_cmd_callback(ProHeader *header)
+{
+	/*
+		#define	ACTIVATION_SUCCESS		0x0000
+		#define PARAM_ERROR				0x0001
+		#define DATA_ENC_ERROR			0x0002
+		#define NEW_DEVICE_TRY_AGAIN	0x0003
+		#define DJI_APP_TIMEOUT			0x0004
+		#define DJI_APP_NO_INTERNET		0x0005
+		#define SERVER_REFUSED			0x0006
+		#define LEVEL_ERROR				0x0007
+	*/
+	uint16_t ack_data;
+	printf("Sdk_ack_cmd0_callback,sequence_number=%d,session_id=%d,data_len=%d\n", header->sequence_number, header->session_id, header->length - EXC_DATA_SIZE);
+	memcpy((uint8_t *)&ack_data,(uint8_t *)&header->magic, (header->length - EXC_DATA_SIZE));
+
+	if( is_sys_error(ack_data))
+	{
+        printf("[DEBUG] SDK_SYS_ERROR 3!!! \n");
+        activation_callback_flag=2;
+     //   QMessageBox::warning(NULL,"Error", "Activation Error", QMessageBox::Ok);
+	}
+	else
+	{
+        char result[][50]={{"ACTIVATION_SUCCESS"},{"PARAM_ERROR"},{"DATA_ENC_ERROR"},{"NEW_DEVICE_TRY_AGAIN"},{"DJI_APP_TIMEOUT"},{" DJI_APP_NO_INTERNET"},{"SERVER_REFUSED"},{"LEVEL_ERROR"}};
+        printf("[ACTIVATION] Activation result: %s \n", *(result+ack_data));
+        activation_callback_flag=1;
+      //  QMessageBox::information(NULL, "Warning", *(result+ack_data), QMessageBox::Ok);
+		activation_status_s = (uint8_t)ack_data;
+
+		if(ack_data == 0)
+		{
+			Pro_Config_Comm_Encrypt_Key(key);
+			printf("[ACTIVATION] set key %s\n",key);
+		}
+	}
+}
+
+**则应用程序中发送请求获取 API 版本命令的操作如下：**
+App_Send_Data(2, 
+			  0, 
+			  MY_ACTIVATION_SET, 
+			  API_USER_ACTIVATION,       	   	     (uint8_t*)&activation_msg,
+			  sizeof(activation_msg), 	  test_activation_ack_cmd_callback, 
+			  1000, 
+			  1);
+```
++ 发送状态控制命令如下所示：
+   + 机载设备对飞机的状态控制分为两个阶段。第一个阶段是发送命令码为 0x01 的状态控制指令。第二个阶段是机载设备在发送状态控制指令之后可以开始尝试发送命令码为 0x02 的执行结果查询命令。我们单独开一个线程来实现此类操作
+```c
+	 while(1)
+	{
+		if(cmd_unit.is_send_cmd)
+		{
+			printf("[DEBUG] in send\n");
+			cmd_unit.is_send_cmd = 0;
+			App_Send_Data(2,				/* 发送第一阶段指令 */
+						  1,
+						  MY_CTRL_CMD_SET, 
+						  API_CMD_REQUEST,	  
+						  (uint8_t*)&cmd_unit.cmd,sizeof(cmd_unit.cmd),
+						  sdk_ack_cmd_callback, 
+						  10, 
+						  0);
+			printf("[DEBUG] send req cmd ok\n");
+			sleep(2);
+			if( (cmd_unit.ack_result&0xFF00) == 0xFF00 )
+			{
+				cmd_unit.ack_callback(&cmd_unit.ack_result);
+				continue;
+			}
+			else if(cmd_unit.ack_result == REQ_TIME_OUT)
+			{
+				printf("[DEBUG] recv ack cmd time out \n");
+				cmd_unit.ack_callback(&cmd_unit.ack_result);
+				continue;
+			}
+			else if(cmd_unit.ack_result == REQ_REFUSE)
+			{
+				cmd_unit.ack_callback(&cmd_unit.ack_result);
+				continue;
+			}
+			else if (cmd_unit.ack_result == CMD_RECIEVE)
+			{
+				printf("[DEBUG] CMD_RECIEVE \n");
+
+				uint8_t req_status = cmd_unit.cmd.cmd_sequence; // can be anything
+				sleep(7);
+				App_Send_Data(2,				/* 发送第二阶段指令 */
+							  1,
+							  MY_CTRL_CMD_SET, 
+							  API_CMD_STATUS_REQUEST,
+							  (uint8_t*)&req_status,sizeof(uint8_t),
+							  sdk_ack_cmd_callback, 
+							  10, 
+							  0);
+				printf("[DEBUG] send req status ok\n");
+				sleep(1);
+				printf("[DEBUG] recv ack1 status ok\n");
+				if( is_sys_error(cmd_unit.ack_result))
+				{
+					printf("SDK_SYS_ERROR!!! \n");
+					continue;
+				}
+				else
+				{
+					cmd_unit.ack_callback(&cmd_unit.ack_result);
+				}
+				
+				// for debug
+				if(cmd_unit.ack_result != STATUS_CMD_EXE_SUCCESS)
+				{
+					printf("[DEBUG] WARNING CMD UN-SECCUSS\n");
+				}
+				
+			}
+		}
+		else
+		{
+			usleep(100000);
+		}
+	}
+```
+**备注，详细代码实现请参考源码**
